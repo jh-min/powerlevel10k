@@ -1,3 +1,15 @@
+# Powerlevel10k+option to shorten path w.r.t vcs
+
+This repository adds `truncate_custom` which is to shorten path according to the length of `prompt_vcs` segment to possible options of `POWERLEVEL9K_SHORTEN_STRATEGY`. It considers the length of VCS icon, git branch name and git status information. To apply this option, add following lines to the bottom of `.zshrc` file located in your home(`~`) directory. Note that this repository assumes not using full screen terminal nor single-line prompt.
+
+```bash
+POWERLEVEL9K_DISABLE_RPROMPT=true
+POWERLEVEL9K_SHORTEN_STRATEGY=truncate_custom
+unset ZLE_RPROMPT_INDENT
+```
+
+---
+
 # Powerlevel10k
 
 Powerlevel10k is a theme for ZSH. It's fast, flexible and easy to install and configure.

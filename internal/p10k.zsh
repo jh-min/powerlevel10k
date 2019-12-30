@@ -1467,6 +1467,91 @@ prompt_dir() {
         done
       fi
     ;;
+    truncate_custom)
+    # set length to leave after shortening path
+      local path_trim=16
+    # check VCS icon length
+      if [[ -n "$VCS_STATUS_REMOTE_URL" ]]; then
+        if [[ "$VCS_STATUS_REMOTE_URL" =~ "github" ]]; then
+          local get_vcs_icon=`echo "$(print_icon "VCS_GIT_GITHUB_ICON")"`
+        elif [[ "$VCS_STATUS_REMOTE_URL" =~ "bitbucket" ]]; then
+          local get_vcs_icon=`echo "$(print_icon "VCS_GIT_BITBUCKET_ICON")"`
+        elif [[ "$VCS_STATUS_REMOTE_URL" =~ "stash" ]]; then
+          local get_vcs_icon=`echo "$(print_icon "VCS_GIT_GITHUB_ICON")"`
+        elif [[ "$VCS_STATUS_REMOTE_URL" =~ "gitlab" ]]; then
+          local get_vcs_icon=`echo "$(print_icon "VCS_GIT_GITLAB_ICON")"`
+        else       
+          local get_vcs_icon=`echo "$(print_icon "VCS_GIT_ICON")"`
+        fi
+      else
+        local get_vcs_icon=
+      fi
+      if [[ -n "$get_vcs_icon" ]] ; then
+        local len_vcs_icon=`expr ${#get_vcs_icon} + 1`
+        path_trim=`expr $path_trim + $len_vcs_icon`
+      fi
+    # check git branch name length
+      if $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+        local get_vcs_branch=$(git symbolic-ref HEAD | cut -d'/' -f3)
+      else
+        local get_vcs_branch=
+      fi
+      local len_vcs_branch=`echo ${#get_vcs_branch}`
+      if [[ "$len_vcs_branch" != "0" ]] ; then
+        len_vcs_branch=`expr $len_vcs_branch + 9`
+        path_trim=`expr $path_trim + $len_vcs_branch`
+      fi
+    # check git status length
+      local len_vcs_status=0
+      local total_vcs_status=1
+      if [[ $VCS_STATUS_COMMITS_AHEAD -gt 0 ]]; then
+        len_vcs_status=`expr ${#VCS_STATUS_COMMITS_AHEAD} + 1`
+        total_vcs_status=`expr $total_vcs_status + $len_vcs_status`
+      fi
+      if [[ $VCS_STATUS_COMMITS_BEHIND -gt 0 ]]; then
+        len_vcs_status=`expr ${#VCS_STATUS_COMMITS_BEHIND} + 1`
+        total_vcs_status=`expr $total_vcs_status + $len_vcs_status`
+      fi
+      if [[ $VCS_STATUS_STASHES -gt 0 ]]; then
+        len_vcs_status=`expr ${#VCS_STATUS_STASHES} + 1`
+        total_vcs_status=`expr $total_vcs_status + $len_vcs_status`
+      fi
+      if [[ $VCS_STATUS_HAS_CONFLICTED == 1 && $_POWERLEVEL9K_VCS_CONFLICTED_STATE == 1 ]]; then
+        len_vcs_status=`expr ${#VCS_STATUS_NUM_CONFLICTED} + 1`
+        total_vcs_status=`expr $total_vcs_status + $len_vcs_status`
+      fi
+      if [[ $VCS_STATUS_HAS_STAGED != 0 ]]; then
+        len_vcs_status=`expr ${#VCS_STATUS_NUM_STAGED} + 1`
+        total_vcs_status=`expr $total_vcs_status + $len_vcs_status`
+      fi
+      if [[ $VCS_STATUS_HAS_UNSTAGED != 0 ]]; then
+        len_vcs_status=`expr ${#VCS_STATUS_NUM_UNSTAGED} + 1`
+        total_vcs_status=`expr $total_vcs_status + $len_vcs_status`
+      fi
+      if [[ $VCS_STATUS_HAS_UNTRACKED != 0 ]]; then
+        len_vcs_status=`expr ${#VCS_STATUS_NUM_UNTRACKED} + 1`
+        total_vcs_status=`expr $total_vcs_status + $len_vcs_status`
+      fi
+      if [[ $len_vcs_status -gt 0 ]]; then
+        path_trim=`expr $path_trim + $total_vcs_status`
+      fi
+    # shorten path
+      local path_prompt="`print -P "%~"`"
+      local len_prompt=`wc -c <<< $path_prompt`
+      local path_remain=`expr $COLUMNS - $path_trim`
+      if [[ $len_prompt -gt $path_remain ]]; then
+        path_trim=`expr $path_trim \* -1`
+        local a=1; local b=2;
+        while [ "`print -P "%$a~"`" != "`print -P "%$b~"`"  ]; do
+          a=$(($a+1))
+          b=$(($b+1))
+        done
+        a=$(($a-1))
+        parts=("`print -P "%-1~%$path_trim</..<%$a~%<<"`")
+      else
+        parts=("$path_prompt")
+      fi
+    ;;
     truncate_to_unique)
       expand=1
       delim=${_POWERLEVEL9K_SHORTEN_DELIMITER-'*'}
